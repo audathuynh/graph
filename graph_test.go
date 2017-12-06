@@ -2,7 +2,7 @@ package graph_test
 
 import (
 	"fmt"
-	"maxsure.org/demo/graph"
+	"github.com/audathuynh/graph"
 	"reflect"
 	"testing"
 )

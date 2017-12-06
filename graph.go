@@ -2,7 +2,6 @@ package graph
 
 import (
 	"errors"
-	//	"fmt"
 	"math"
 )
 
@@ -13,8 +12,8 @@ type Vertex struct {
 	InDegree   int
 	OutDegree  int
 
-	Processed  bool    // for BrFS, DFS
-	Parent     *Vertex // to trace when a solution is a path, not a state
+	Processed  bool    // for BrFS, DFS, BFS
+	Parent     *Vertex // Used when the solution of the given problem is a path, not a state. The value is used to trace to the path.
 	InTree     bool
 	PathLength float64
 }
@@ -347,14 +346,13 @@ func (graph *Graph) FindRoundTripWithMaxStops(vertexKey string, stops int) ([]st
 	return nil, errors.New("Result not found")
 }
 
-// Process a solution by tracing the parent pointer to print a path on screen.
+// Return the path of a solution by tracing the pointer 'parent'.
 func processSolution(vertex *Vertex) []string {
 	stack := NewStack()
 
 	ptr := vertex
 	for ptr != nil {
 		stack.Push(ptr)
-		//fmt.Println(ptr.Data, "-")
 		ptr = ptr.Parent
 	}
 	var result []string
@@ -364,15 +362,11 @@ func processSolution(vertex *Vertex) []string {
 		ptr := stack.Pop()
 		result[i] = ptr.Key
 		i++
-		//if stack.Count > 0 {
-		//	fmt.Print("-")
-		//}
 	}
-	//fmt.Println()
 	return result
 }
 
-// Find trips from 'fromKey' to 'toKey' with a given number of stops 'stops'
+// Find trips from the vertex 'fromKey' to the vertex 'toKey' with a given number of stops 'stops'
 func (graph *Graph) FindTripExactStops(fromKey, toKey string, stops int) ([]string, error) {
 	// Find vertex with the key
 	if graph.First == nil {
@@ -526,9 +520,9 @@ func (graph *Graph) FindShortestRoundTrip(fromKey string) ([]string, error) {
 	vPtr = vFromPtr
 	vPtr.PathLength = 0.0 // distance from source to source is 0
 
-	queue := NewQueue(true)
+	queue := NewQueue(true) // create a priority queue
 	queue.Enqueue(vPtr)
-	vPtr.Processed = true // true means that it is used to be in the queue
+	vPtr.Processed = true // true means that it is used to be processed in the queue
 	for !queue.IsEmpty() {
 		queue.Dequeue(&vPtr)
 		//fmt.Println("Dequeue:", vPtr.Key, "PathLength:", vPtr.PathLength)
@@ -545,7 +539,7 @@ func (graph *Graph) FindShortestRoundTrip(fromKey string) ([]string, error) {
 			dest := aPtr.Dest
 			if !dest.Processed || dest.PathLength == 0 {
 				dest.PathLength = vPtr.PathLength + aPtr.Weight
-				dest.Parent = vPtr // update parent to trace the solution
+				dest.Parent = vPtr // update parent to trace the solution later
 				queue.Enqueue(dest)
 				dest.Processed = true
 				//fmt.Println("Parent of", dest.Key, "is", vPtr.Key)
@@ -564,10 +558,11 @@ func (graph *Graph) FindShortestRoundTrip(fromKey string) ([]string, error) {
 	return nil, errors.New("No solution found")
 }
 
+// Find round trips from the vertex 'vertexKey' with the max weight 'maxWeight'
 func (graph *Graph) FindRoundTripWithMaxWeight(vertexKey string, maxWeight float64) ([][]string, error) {
-	// Find vertex with the key
 	var solutions [][]string
 
+	// Find vertex with the key
 	if graph.First == nil {
 		return nil, errors.New("Graph is empty")
 	}
@@ -586,7 +581,6 @@ func (graph *Graph) FindRoundTripWithMaxWeight(vertexKey string, maxWeight float
 		queue.Dequeue(&vPtr)
 		if vPtr.PathLength < maxWeight {
 			if vPtr.PathLength > 0 && vPtr.Key == vertexKey { // found a solution
-				//fmt.Println("Found a solution")
 				solution := processSolution(vPtr)
 				solutions = append(solutions, solution)
 			}
@@ -602,11 +596,10 @@ func (graph *Graph) FindRoundTripWithMaxWeight(vertexKey string, maxWeight float
 					Processed:  dest.Processed,
 					Parent:     dest.Parent,
 					PathLength: vPtr.PathLength + aPtr.Weight}
-				dataPtr.Parent = vPtr // update parent to trace the solution if it is a path
+				dataPtr.Parent = vPtr // update parent to trace the solution
 				if dataPtr.PathLength < maxWeight {
 					queue.Enqueue(dataPtr)
 				}
-				//fmt.Println("Enqueue from ", vPtr.Data, " dest ", dataPtr.Data)
 				aPtr = aPtr.NextArc
 			}
 
